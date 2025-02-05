@@ -74,7 +74,7 @@ def plot_bar_chart(labels, values, title_label):
             fontsize=9
         )
 
-    # ---- NEW: Show "Total: X" in the top-right corner ----
+    # ---- Show "Total: X" in the top-right corner ----
     total_str = format_int_no_decimals(total_sum)
     ax.text(
         0.95, 0.95,                # x,y in axes coords (0=left/bottom, 1=right/top)
@@ -147,6 +147,7 @@ def main():
     1. Read 'input_expenses.xlsx', remove blank/NaN or zero total_expense.
     2. Aggregate by 'buisness_name', write to output.txt, bar + pie charts.
     3. Merge categories if available -> aggregate by 'category', write + bar/pie.
+       Then also list the expense breakdown per category by business.
     """
     with open("output.txt", "w", encoding="utf-8") as f:
 
@@ -202,10 +203,24 @@ def main():
         df_by_category.sort_values('total_expense', ascending=False, inplace=True)
 
         for _, row in df_by_category.iterrows():
-            val_str = format_int_no_decimals(row['total_expense'])
-            f.write(f"Category: {row['category']}, Total: {val_str}\n")
+            category = row['category']
+            cat_total = row['total_expense']
+            cat_total_str = format_int_no_decimals(cat_total)
+            f.write(f"Category: {category}, Total: {cat_total_str}\n")
 
-        # Plot bar + fraction-pie
+            # NEW SECTION: list all businesses that contributed to this category
+            # Group them by business to get total expense per business in this category
+            cat_df = (df_merged[df_merged['category'] == category]
+                      .groupby('buisness_name', as_index=False)['total_expense']
+                      .sum()
+                      .sort_values('total_expense', ascending=False))
+
+            for _, row_b in cat_df.iterrows():
+                biz_name = row_b['buisness_name']
+                biz_expense_str = format_int_no_decimals(row_b['total_expense'])
+                f.write(f"\tBusiness: {biz_name} => {biz_expense_str}\n")
+
+        # Plot bar + fraction-pie for categories
         plot_bar_chart(
             labels=df_by_category['category'],
             values=df_by_category['total_expense'],
