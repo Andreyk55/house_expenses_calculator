@@ -136,10 +136,13 @@ def plot_bar_chart_with_details(labels, values, title_label, category_details):
     # --------------------------
     #  Use mplcursors for click
     # --------------------------
+    #print("***********labels - ", labels)
+
     cursor = mplcursors.cursor(bars, hover=False)  # or hover=True if you want mouseover
     @cursor.connect("add")
     def on_add(sel):
         idx = sel.index  # index of the bar
+        #print("***********idx - ", idx)
         cat_label = labels[idx]  # which category did we click?
         # Retrieve details from category_details
         # e.g. [("McDonalds", "1,234"), ("KFC", "900")]
@@ -213,6 +216,8 @@ def plot_fraction_pie(labels, values, title_label):
     plt.show()
 
 def main():
+    plot_by_business = False
+
     """
     1. Read 'input_expenses.xlsx', remove blank/NaN or zero total_expense.
     2. Aggregate by 'buisness_name', write to output.txt, bar + pie charts.
@@ -229,31 +234,32 @@ def main():
         # Optionally remove negatives if not allowed:
         # df_expenses = df_expenses[df_expenses['total_expense'] > 0]
 
-        # --- 2) Aggregate by BUSINESS NAME ---
-        f.write("=== 1) Aggregation by Business Name ===\n")
+        if plot_by_business:
+            # --- 2) Aggregate by BUSINESS NAME ---
+            f.write("=== 1) Aggregation by Business Name ===\n")
 
-        df_by_business = (
-            df_expenses
-            .groupby('buisness_name', as_index=False)['total_expense']
-            .sum()
-        )
-        df_by_business.sort_values('total_expense', ascending=False, inplace=True)
+            df_by_business = (
+                df_expenses
+                .groupby('buisness_name', as_index=False)['total_expense']
+                .sum()
+            )
+            df_by_business.sort_values('total_expense', ascending=False, inplace=True)
 
-        for _, row_biz in df_by_business.iterrows():
-            val_str = format_int_no_decimals(row_biz['total_expense'])
-            f.write(f"Business: {row_biz['buisness_name']}, Total: {val_str}\n")
+            for _, row_biz in df_by_business.iterrows():
+                val_str = format_int_no_decimals(row_biz['total_expense'])
+                f.write(f"Business: {row_biz['buisness_name']}, Total: {val_str}\n")
 
-        # Plot bar + fraction-pie
-        plot_bar_chart(
-            labels=df_by_business['buisness_name'],
-            values=df_by_business['total_expense'],
-            title_label="Business Name"
-        )
-        plot_fraction_pie(
-            labels=df_by_business['buisness_name'],
-            values=df_by_business['total_expense'],
-            title_label="Business Name"
-        )
+            # Plot bar + fraction-pie
+            plot_bar_chart(
+                labels=df_by_business['buisness_name'],
+                values=df_by_business['total_expense'],
+                title_label="Business Name"
+            )
+            plot_fraction_pie(
+                labels=df_by_business['buisness_name'],
+                values=df_by_business['total_expense'],
+                title_label="Business Name"
+            )
 
         # --- 3) Aggregate by CATEGORY ---
         f.write("\n=== 2) Aggregation by Category ===\n")
@@ -271,7 +277,7 @@ def main():
             .groupby('category', as_index=False)['total_expense']
             .sum()
         )
-        df_by_category.sort_values('total_expense', ascending=False, inplace=True)
+        #df_by_category.sort_values('total_expense', ascending=False, inplace=True)
 
         # For interactive details, build a dictionary:
         #   category_details = {
