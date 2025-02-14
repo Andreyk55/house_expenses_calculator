@@ -1,16 +1,41 @@
 import os
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import mplcursors  # <-- for interactive annotations
 
-def naive_reverse_hebrew(s: str) -> str:
+def is_all_hebrew(word: str) -> bool:
     """
-    Naively reverses the entire string.
-    WARNING: This only 'looks' correct for simple Hebrew text (letters only),
-             but fails with punctuation, digits, or mixed LTR text.
+    Returns True if 'word' consists ONLY of Hebrew letters (\u0590-\u05FF).
+    Otherwise False (digits, punctuation, or mixing => not purely Hebrew).
     """
-    return s[::-1]
+    return bool(re.match(r'^[\u0590-\u05FF]+$', word))
+
+def reverse_line_hebrew_words_and_order(line: str) -> str:
+    """
+    1) Split 'line' by spaces into tokens.
+    2) Reverse the entire token list order.
+    3) For each token that is fully Hebrew, also reverse its letters.
+    4) Join back with spaces.
+    
+    Example:
+      "שלום עולם" => ["שלום", "עולם"] => reverse => ["עולם", "שלום"] 
+                     => reverse letters => ["םלוע", "םולש"] => "םלוע םולש"
+      "שלום123" => single token with digits => unchanged => "שלום123"
+    """
+    tokens = line.split()
+    # Reverse the overall word order
+    tokens.reverse()
+
+    new_tokens = []
+    for token in tokens:
+        if is_all_hebrew(token):
+            # Reverse the letters
+            token = token[::-1]
+        new_tokens.append(token)
+    # Join final list
+    return " ".join(new_tokens)
 
 def format_int_no_decimals(value):
     """
@@ -152,14 +177,11 @@ def plot_bar_chart_with_details(labels, values, title_label, category_details):
         cat_label = labels[idx]
         biz_info_list = category_details.get(cat_label, [])
 
-        # NAIVE reversal for cat_label
-        cat_label_reversed = naive_reverse_hebrew(cat_label)
-
         # Build lines
-        lines = [f"Category: {cat_label_reversed}"]
+        lines = [f"Category: {cat_label}"]
         for (biz_name, exp_str) in biz_info_list:
             # Also apply naive reversal to the business name
-            biz_name_reversed = naive_reverse_hebrew(biz_name)
+            biz_name_reversed = reverse_line_hebrew_words_and_order(biz_name)
             lines.append(f"{biz_name_reversed} => {exp_str}")
 
         # Join with newlines
