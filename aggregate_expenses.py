@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import mplcursors  # <-- for interactive annotations
 
+def naive_reverse_hebrew(s: str) -> str:
+    """
+    Naively reverses the entire string.
+    WARNING: This only 'looks' correct for simple Hebrew text (letters only),
+             but fails with punctuation, digits, or mixed LTR text.
+    """
+    return s[::-1]
+
 def format_int_no_decimals(value):
     """
     Converts a numeric value to a comma-separated integer, unless it's 0 < value < 1.
@@ -90,7 +98,7 @@ def plot_bar_chart_with_details(labels, values, title_label, category_details):
     """
     Bar chart specifically for 'Category' with an interactive annotation on click.
     category_details: dict mapping category_name -> list of (business, expense_str)
-                      e.g. {"Food": [("McDonalds", "1,234"), ("KFC", "900")], ...}
+    Using NAIVE reversal for Hebrew text in the annotation popup.
     """
     fig, ax = plt.subplots(figsize=(8, 5))
     bars = ax.bar(labels, values, color='skyblue')
@@ -136,25 +144,23 @@ def plot_bar_chart_with_details(labels, values, title_label, category_details):
     # --------------------------
     #  Use mplcursors for click
     # --------------------------
-    #print("***********labels - ", labels)
-
     cursor = mplcursors.cursor(bars, hover=False)  # or hover=True if you want mouseover
+
     @cursor.connect("add")
     def on_add(sel):
-        idx = sel.index  # index of the bar
-        #print("***********idx - ", idx)
-        cat_label = labels[idx]  # which category did we click?
-        # Retrieve details from category_details
-        # e.g. [("McDonalds", "1,234"), ("KFC", "900")]
+        idx = sel.index
+        cat_label = labels[idx]
         biz_info_list = category_details.get(cat_label, [])
 
-        # Build a multiline string:
-        # "Category: Food
-        #  McDonalds => 1,234
-        #  KFC => 900"
-        lines = [f"Category: {cat_label}"]
+        # NAIVE reversal for cat_label
+        cat_label_reversed = naive_reverse_hebrew(cat_label)
+
+        # Build lines
+        lines = [f"Category: {cat_label_reversed}"]
         for (biz_name, exp_str) in biz_info_list:
-            lines.append(f"{biz_name} => {exp_str}")
+            # Also apply naive reversal to the business name
+            biz_name_reversed = naive_reverse_hebrew(biz_name)
+            lines.append(f"{biz_name_reversed} => {exp_str}")
 
         # Join with newlines
         detail_text = "\n".join(lines)
@@ -162,9 +168,8 @@ def plot_bar_chart_with_details(labels, values, title_label, category_details):
         # Set the annotation text to show these details
         sel.annotation.set_text(detail_text)
 
-        # Optional: you can style the popup box
-        sel.annotation.get_bbox_patch().set(fc="white")  # background color
-        sel.annotation.get_bbox_patch().set(ec="black")  # edge color
+        # Optional styling
+        sel.annotation.get_bbox_patch().set(fc="white", ec="black")
 
     plt.tight_layout()
     plt.show()
@@ -220,10 +225,10 @@ def main():
 
     """
     1. Read 'input_expenses.xlsx', remove blank/NaN or zero total_expense.
-    2. Aggregate by 'buisness_name', write to output.txt, bar + pie charts.
+    2. Optionally aggregate by 'buisness_name', bar + pie charts.
     3. Merge categories if available -> aggregate by 'category'.
        - Build a dictionary of each category's business breakdown.
-       - Show interactive bar chart so user can click and see details.
+       - Show interactive bar chart (naive reversing Hebrew text on click).
     """
     with open("output.txt", "w", encoding="utf-8") as f:
 
@@ -231,13 +236,12 @@ def main():
         df_expenses = pd.read_excel('input_expenses.xlsx')
         df_expenses.dropna(subset=['total_expense'], inplace=True)
         df_expenses = df_expenses[df_expenses['total_expense'] != 0]
-        # Optionally remove negatives if not allowed:
+        # (Optional) remove negatives if not allowed:
         # df_expenses = df_expenses[df_expenses['total_expense'] > 0]
 
         if plot_by_business:
             # --- 2) Aggregate by BUSINESS NAME ---
             f.write("=== 1) Aggregation by Business Name ===\n")
-
             df_by_business = (
                 df_expenses
                 .groupby('buisness_name', as_index=False)['total_expense']
@@ -264,6 +268,7 @@ def main():
         # --- 3) Aggregate by CATEGORY ---
         f.write("\n=== 2) Aggregation by Category ===\n")
 
+        # Merge with categories if available
         if os.path.exists('categories.xlsx'):
             df_categories = pd.read_excel('categories.xlsx')
             df_merged = df_expenses.merge(df_categories, on='buisness_name', how='left')
@@ -279,12 +284,6 @@ def main():
         )
         #df_by_category.sort_values('total_expense', ascending=False, inplace=True)
 
-        # For interactive details, build a dictionary:
-        #   category_details = {
-        #       "Food": [("McDonalds", "1,234"), ("Starbucks", "900")],
-        #       "Clothes": [("Nike", "500")],
-        #       ...
-        #   }
         category_details = {}
         for _, row_cat in df_by_category.iterrows():
             cat = row_cat['category']
