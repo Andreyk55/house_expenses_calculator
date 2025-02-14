@@ -121,25 +121,7 @@ def plot_bar_chart(labels, values, title_label):
     plt.show()
 
 def plot_bar_chart_with_details(labels, values, title_label, category_details):
-    print('---------***---------')
-    print(type(labels))
-    print('------------------')
     labels = labels.reset_index(drop=True)
-    print(labels)
-    print('------------------')
-    # N = len(labels)
-    # new_indexes = np.arange(N)
-    # new_map = np.column_stack([new_indexes, labels])
-
-    # print(new_map)
-
-    # labels = new_map
-
-    #print('------------------')
-    #print(title_label)
-    #('------------------')
-    #print(category_details)
-    #print('------------------')
 
     """
     Bar chart specifically for 'Category' with an interactive annotation on click.
@@ -327,11 +309,9 @@ def main():
             .groupby('category', as_index=False)['total_expense']
             .sum()
         )
-        #print(df_merged)
         
         df_by_category_not_sorted = df_by_category.copy()
         df_by_category.sort_values('total_expense', ascending=False, inplace=True)
-        #print(df_by_category)
 
         category_details = {}
         for _, row_cat in df_by_category.iterrows():
@@ -348,9 +328,6 @@ def main():
                 .sort_values('total_expense', ascending=False)
             )
 
-            #print(cat)
-            #print(cat_df)
-
             detail_list = []
             for _, row_b in cat_df.iterrows():
                 biz_name = row_b['buisness_name']
@@ -358,12 +335,7 @@ def main():
                 detail_list.append((biz_name, biz_exp_str))
                 f.write(f"\tBusiness: {biz_name} => {biz_exp_str}\n")
 
-            #print(detail_list)
             category_details[cat] = detail_list
-
-        #print(df_by_category)
-        #print('------------------')
-        #print(category_details)
 
         # Now we have 'df_by_category' for the bar/pie, and 'category_details' for the popup
         # Plot an interactive bar chart for Category
