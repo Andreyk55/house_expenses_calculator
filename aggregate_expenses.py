@@ -11,7 +11,7 @@ def is_all_hebrew(word: str) -> bool:
     Returns True if 'word' consists ONLY of Hebrew letters (\u0590-\u05FF).
     Otherwise False (digits, punctuation, or mixing => not purely Hebrew).
     """
-    return bool(re.match(r'^[\u0590-\u05FF]+$', word)) or word.__contains__('"')
+    return bool(re.match(r'^[\u0590-\u05FF]+$', word)) or word.__contains__('"') or word.__contains__('-') or word.__contains__('/')
 
 def reverse_line_hebrew_words_and_order(line: str) -> str:
     """
